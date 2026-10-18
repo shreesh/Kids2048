@@ -162,7 +162,9 @@ h1 {
   --pad: 12px;
   position: relative;
   width: min(100%, 100cqi, 100cqb);
-  aspect-ratio: 1;
+  height: auto;
+  justify-self: center;
+  align-self: center;
   background: #f4f7fb;
   border-radius: 28px;
   padding: var(--pad);
@@ -172,9 +174,11 @@ h1 {
 
 .cells {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: var(--gap);
-  height: 100%;
+  width: 100%;
+  aspect-ratio: 1;
 }
 
 .cell {

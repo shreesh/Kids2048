@@ -53,19 +53,24 @@
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  function metrics() {
-    var cs = getComputedStyle(board);
-    var pad = parseFloat(cs.paddingLeft) || 12;
-    var gap = parseFloat(cs.getPropertyValue("--gap")) || 10;
-    var inner = board.clientWidth - pad * 2;
-    var size = (inner - gap * 3) / 4;
-    return { pad: pad, gap: gap, size: size };
+  function cellBox(r, c) {
+    var cell = document.getElementById("cells").children[r * 4 + c];
+    var base = tilesEl.getBoundingClientRect();
+    var rect = cell.getBoundingClientRect();
+    return {
+      x: rect.left - base.left,
+      y: rect.top - base.top,
+      w: rect.width,
+      h: rect.height,
+    };
   }
 
-  function place(el, r, c, box) {
-    el.style.width = box.size + "px";
-    el.style.height = box.size + "px";
-    el.style.transform = "translate(" + (box.pad + c * (box.size + box.gap)) + "px, " + (box.pad + r * (box.size + box.gap)) + "px)";
+  function place(el, r, c) {
+    var box = cellBox(r, c);
+    if (box.w < 1 || box.h < 1) return;
+    el.style.width = box.w + "px";
+    el.style.height = box.h + "px";
+    el.style.transform = "translate(" + box.x + "px, " + box.y + "px)";
   }
 
   function makeTile(cell) {
@@ -108,12 +113,11 @@
 
   function layout(animate) {
     if (!state) return;
-    var box = metrics();
     tileEls.forEach(function (el, id) {
       var pos = find(id);
       if (!pos) return;
       if (!animate) el.style.transition = "none";
-      place(el, pos.r, pos.c, box);
+      place(el, pos.r, pos.c);
     });
     if (!animate) {
       requestAnimationFrame(function () {
@@ -125,14 +129,13 @@
   function renderAll() {
     tilesEl.innerHTML = "";
     tileEls.clear();
-    var box = metrics();
     for (var r = 0; r < state.cells.length; r++) {
       for (var c = 0; c < state.cells[r].length; c++) {
         var cell = state.cells[r][c];
         if (!cell) continue;
         var el = makeTile(cell);
         el.style.transition = "none";
-        place(el, r, c, box);
+        place(el, r, c);
         tilesEl.appendChild(el);
         tileEls.set(cell.id, el);
       }
@@ -348,12 +351,11 @@
     result.events.forEach(function (event) {
       if (event.type === "merge") playMergeSound(event.value);
     });
-    var box = metrics();
     result.events.forEach(function (event) {
       if (event.type !== "move" && event.type !== "merge") return;
       var el = tileEls.get(event.id);
       if (!el) return;
-      place(el, event.to.r, event.to.c, box);
+      place(el, event.to.r, event.to.c);
       if (event.type === "merge") {
         var into = tileEls.get(event.intoId);
         if (into) into.style.zIndex = "1000";
@@ -379,7 +381,7 @@
         if (event.type === "spawn") {
           var el = makeTile({ id: event.id, value: event.value });
           if (!reducedMotion()) el.classList.add("fresh");
-          place(el, event.at.r, event.at.c, metrics());
+          place(el, event.at.r, event.at.c);
           tilesEl.appendChild(el);
           tileEls.set(event.id, el);
         }
